@@ -2,39 +2,76 @@
 
 Uses the `backup` ruby gem for creating backups
 
-Supports mysql backups to cloudfiles.
-Support for mongodb to cloudfiles coming next.
+Supports everything the [backup](https://github.com/meskyanichi/backup) gem
+supports.
 
 ## Usage
 
-Minimal options to get going.
+Backup comes with a `backup` LWRP. All you need to do is supply it a template,
+and variables for the template. It will install backup, install your 
 
 ``` ruby
-backup_mysql "myapp-mysql" do
-  # chunks 250
-  # interval "1.day", :at => "12:00 am"
+backup "postgres" do
+  interval "1.day"  # How often to trigger a backup (uses whenever)
+  run_at "12:00 am" # What time the backup should run
 
-  # To dump all databases, set database = :all (or leave blank)
-  database "myapp_production"
-  username "my_username"
-  password "my_password"
-  host "localhost"
-
-  storage "cloudfiles"
-  cloudfiles_api_key "my_api_key"
-  cloudfiles_username "my_username"
-  cloudfiles_container "my_container"
+  # Options that are passed through to a template resource block to render
+  # your backup configuration file
+  cookbook "myapp"
+  source "postgres.rb.erb"
+  variables(
+    :password => node['mysql']['password']
+    # ...
+  )
 end
 ```
 
-## Notes
+## Example Usage
 
-* make sure to add depends on referring project cookbook
-* add to mongo or mysql recipe in project cookbook:
-```ruby
-# Only run database backup recipe on primary database node                                                                                                                                                                                                                                                  
-if node.name =~ /01$/
-  Chef::Log.info "Running database backup recipe"
-    include_recipe "target-tgtapps::database-backup"
-	end
+You'll need to create a backup configuration file and a recipe to use the
+resource in. Much more information about the backup configuration file can
+be found here: https://github.com/meskyanichi/backup/wiki
+
+``` ruby
+# /cookbooks/myapp/templates/default/backup.rb.erb:
+database PostgreSQL do |db|
+  db.name               = "<%= @database %>"
+  db.username           = "<%= @username %>"
+  db.password           = "<%= @password %>"
+  db.host               = "localhost"
+  db.port               = 5432
+  db.socket             = "/tmp/pg.sock"
+  db.skip_tables        = ['skip', 'these', 'tables']
+  db.only_tables        = ['only', 'these' 'tables']
+  db.additional_options = []
+  # Optional: Use to set the location of this utility
+  #   if it cannot be found by name in your $PATH
+  # db.pg_dump_utility = '/opt/local/bin/pg_dump'
+end
+
+compress_with Gzip do |compression|
+  compression.level = 6
+end
+
+encrypt_with OpenSSL do |encryption|
+  encryption.password_file = '/path/to/password/file'
+  encryption.base64        = true
+  encryption.salt          = true
+end
+
+store_with Local do |local|
+  local.path = '~/backups/'
+  local.keep = 5
+end
+
+# /cookbooks/myapp/recipes/backup.rb:
+backup "myapp" do
+  source "backup.rb.erb"
+  variables(
+    :database => "my_database",
+    :username => "my_username",
+    :password => node['postgres']['password']
+  )
+end
+
 ```
