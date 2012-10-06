@@ -8,7 +8,8 @@ supports.
 ## Usage
 
 Backup comes with a `backup` LWRP. All you need to do is supply it a template,
-and variables for the template. It will install backup, install your 
+and variables for the template. It will install backup, install your backup
+configuration file, and add an entry to the crontab to run it.
 
 ``` ruby
 backup "postgres" do
