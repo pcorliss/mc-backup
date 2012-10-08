@@ -1,3 +1,3 @@
 every <%= @interval %>, :at => "<%= @run_at %>" do
-   command "backup perform --trigger <%= @trigger %> --config-file <%= node[:backup][:dir] %>/config.rb"
+  command "backup perform --trigger <%= @trigger %> --log-path <%= node['backup']['logpath'] %> --config-file <%= node['backup']['dir'] %>/config.rb"
 end

@@ -4,10 +4,12 @@ def initialize(*args)
 end
 
 action :create do
-  package "libxml2-dev"
-  package "libxslt-dev"
 
-  %w[ backup fog mail whenever ].each do |gem_name|
+  gem_package 'fog' do
+    version '~> 1.4.0'
+  end
+
+  %w[ backup mail whenever ].each do |gem_name|
     gem_package gem_name
   end
 
@@ -21,6 +23,7 @@ action :create do
   end
 
   template "#{node[:backup][:dir]}/config.rb" do
+    cookbook "backup"
     source "config.rb.erb"
     mode "0664"
     owner "root"
@@ -34,9 +37,7 @@ action :create do
     owner "root"
     group "root"
 
-    variables(
-      :resource => new_resource.variables
-    )
+    variables new_resource.variables
   end
 
   template "#{node[:backup][:dir]}/schedules/#{new_resource.label}-backup.rb" do
