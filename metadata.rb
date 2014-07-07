@@ -1,3 +1,4 @@
+name              "mc-backup"
 maintainer        "ModCloth"
 maintainer_email  "ops@modcloth.com"
 license           "Apache 2.0"
